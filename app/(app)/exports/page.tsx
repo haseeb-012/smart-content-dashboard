@@ -1,5 +1,7 @@
 "use client";
 
+import { LIVE } from "@/lib/config";
+import { LiveExports } from "@/components/features/live-create";
 import { Download, FileJson, FileText, History } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { videos } from "@/lib/mock/data";
@@ -7,7 +9,7 @@ import { scriptToText } from "@/lib/generate";
 import { ago, download } from "@/lib/utils";
 import { Badge, Button, Card, EmptyState, PageHeader } from "@/components/ui";
 
-export default function ExportsPage() {
+function DemoExports() {
   const { ws, logExport, toast } = useStore();
 
   const bundle = () => ({
@@ -67,4 +69,8 @@ export default function ExportsPage() {
       )}
     </>
   );
+}
+
+export default function ExportsPage() {
+  return LIVE ? <LiveExports /> : <DemoExports />;
 }

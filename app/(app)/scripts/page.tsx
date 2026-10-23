@@ -1,5 +1,7 @@
 "use client";
 
+import { LIVE } from "@/lib/config";
+import { LiveScripts } from "@/components/features/live-create";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -8,7 +10,7 @@ import { useAction, useStore } from "@/lib/store";
 import { ago } from "@/lib/utils";
 import { Badge, Button, Card, CreditCost, EmptyState, Field, Input, Modal, PageHeader, Select } from "@/components/ui";
 
-export default function ScriptsPage() {
+function DemoScripts() {
   const { ws, createScript, state } = useStore();
   const run = useAction();
   const router = useRouter();
@@ -66,4 +68,8 @@ export default function ScriptsPage() {
       </Modal>
     </>
   );
+}
+
+export default function ScriptsPage() {
+  return LIVE ? <LiveScripts /> : <DemoScripts />;
 }

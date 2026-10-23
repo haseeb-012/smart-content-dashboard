@@ -1,5 +1,7 @@
 "use client";
 
+import { LIVE } from "@/lib/config";
+import { LiveProjects } from "@/components/features/live-create";
 import Link from "next/link";
 import { useState } from "react";
 import { FolderOpen, Plus } from "lucide-react";
@@ -7,7 +9,7 @@ import { useStore } from "@/lib/store";
 import { ago } from "@/lib/utils";
 import { Button, Card, EmptyState, Field, Input, Modal, PageHeader, Textarea } from "@/components/ui";
 
-export default function ProjectsPage() {
+function DemoProjects() {
   const { ws, createProject, toast } = useStore();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -48,4 +50,8 @@ export default function ProjectsPage() {
       </Modal>
     </>
   );
+}
+
+export default function ProjectsPage() {
+  return LIVE ? <LiveProjects /> : <DemoProjects />;
 }

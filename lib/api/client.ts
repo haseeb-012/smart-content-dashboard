@@ -56,6 +56,19 @@ export interface ApiIdea {
   positioning: string; format: string; contrast: string; personalization: string; shortlisted: boolean; created_at: string;
 }
 export interface ApiVideoDetail { video: ApiFeedVideo; analysis: ApiAnalysis | null; idea: ApiIdea | null }
+export type ApiHookCategory = "contrarian" | "curiosity_gap" | "question" | "unexpected_claim" | "problem" | "other";
+export interface ApiHook { id: string; text: string; category: ApiHookCategory; niche: string; views: number | null; source_url: string | null }
+export interface ApiSavedHook { id: string; text: string; category: ApiHookCategory | null; source: string; created_at: string }
+export interface ApiBlocks { hook: string; intro: string; main: string; story: string; cta: string; ending: string }
+export interface ApiScriptSummary {
+  id: string; title: string; topic: string; hook: string; expanded: boolean; version_count: number;
+  source_video_id: string | null; source_idea_id: string | null; created_at: string; updated_at: string;
+}
+export interface ApiScript extends ApiScriptSummary { blocks: ApiBlocks; versions: Array<{ id: string; title: string; blocks: ApiBlocks; note: string; created_at: string }> }
+export type ApiItemKind = "video" | "idea" | "script";
+export interface ApiProjectItem { kind: ApiItemKind; ref_id: string; title: string; subtitle: string; thumbnail_url: string | null; platform: ApiPlatform | null; added_at: string }
+export interface ApiProject { id: string; name: string; description: string; created_at: string; items: ApiProjectItem[] }
+export interface ApiExport { id: string; kind: string; title: string; format: string; created_at: string }
 export interface FeedParams {
   channel_id?: string[]; platform?: ApiPlatform; min_outlier?: number; min_views?: number; max_views?: number;
   min_engagement?: number; posted_within_days?: number; q?: string; sort?: "outlier" | "views" | "engagement" | "newest";
@@ -86,8 +99,8 @@ async function token(): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
-async function request<T>(method: string, path: string, body?: unknown, auth = true): Promise<T> {
-  const headers: Record<string, string> = {};
+async function request<T>(method: string, path: string, body?: unknown, auth = true, extra: Record<string, string> = {}): Promise<T> {
+  const headers: Record<string, string> = { ...extra };
   if (body !== undefined) headers["Content-Type"] = "application/json";
   if (auth) {
     const t = await token();
@@ -105,6 +118,16 @@ async function request<T>(method: string, path: string, body?: unknown, auth = t
   let err: { code?: string; message?: string; details?: Record<string, unknown> } = {};
   try { err = (await res.json()).error ?? {}; } catch {}
   throw new ApiError(res.status, err.code ?? "error", err.message ?? `Request failed (${res.status}).`, err.details);
+}
+
+/** Authenticated file download (the browser can't attach the token to a plain link). */
+async function requestBlob(path: string): Promise<{ blob: Blob; filename: string }> {
+  const t = await token();
+  if (!t) throw new ApiError(401, "unauthorized", "Please sign in again.");
+  const res = await fetch(`${API_URL}/api/v1${path}`, { headers: { Authorization: `Bearer ${t}` } });
+  if (!res.ok) throw new ApiError(res.status, "error", `Download failed (${res.status}).`);
+  const cd = res.headers.get("content-disposition") ?? "";
+  return { blob: await res.blob(), filename: /filename="([^"]+)"/.exec(cd)?.[1] ?? "download" };
 }
 
 export const api = {
@@ -143,5 +166,34 @@ export const api = {
   ideas: (ws: string, shortlisted?: boolean) => request<ApiIdea[]>("GET", `/workspaces/${ws}/ideas${qs({ shortlisted })}`),
   updateIdea: (ws: string, id: string, patch: { shortlisted?: boolean; title?: string }) => request<ApiIdea>("PATCH", `/workspaces/${ws}/ideas/${id}`, patch),
   deleteIdea: (ws: string, id: string) => request<null>("DELETE", `/workspaces/${ws}/ideas/${id}`),
+  generateIdeas: (ws: string, topic: string, count = 5) => request<ApiIdea[]>("POST", `/workspaces/${ws}/ideas/generate`, { topic, count }),
+  // Hooks: public library + free generator + per-workspace watchlist.
+  hookLibrary: (p: { category?: ApiHookCategory; niche?: string; q?: string } = {}) => request<ApiHook[]>("GET", `/hooks${qs(p)}`, undefined, false),
+  generateHooks: (ws: string, topic: string, category: ApiHookCategory | undefined, count: number) =>
+    request<Array<{ text: string; category: ApiHookCategory }>>("POST", `/workspaces/${ws}/hooks/generate`, { topic, category, count }),
+  savedHooks: (ws: string) => request<ApiSavedHook[]>("GET", `/workspaces/${ws}/saved-hooks`),
+  saveHook: (ws: string, text: string, category: ApiHookCategory | null, source: "library" | "generator" | "analysis" | "manual") =>
+    request<ApiSavedHook>("POST", `/workspaces/${ws}/saved-hooks`, { text, category, source }),
+  unsaveHook: (ws: string, id: string) => request<null>("DELETE", `/workspaces/${ws}/saved-hooks/${id}`),
+  // Scripts: generating costs 1 credit (only on success); the key makes retries safe.
+  scripts: (ws: string) => request<ApiScriptSummary[]>("GET", `/workspaces/${ws}/scripts`),
+  script: (ws: string, id: string) => request<ApiScript>("GET", `/workspaces/${ws}/scripts/${id}`),
+  createScript: (ws: string, body: { title: string; topic: string; hook?: string; source_video_id?: string; source_idea_id?: string }, key: string) =>
+    request<ApiScript>("POST", `/workspaces/${ws}/scripts`, body, true, { "Idempotency-Key": key }),
+  updateScript: (ws: string, id: string, patch: { title?: string; blocks?: ApiBlocks }) => request<ApiScript>("PATCH", `/workspaces/${ws}/scripts/${id}`, patch),
+  expandScript: (ws: string, id: string) => request<ApiScript>("POST", `/workspaces/${ws}/scripts/${id}/expand`),
+  restoreScript: (ws: string, id: string, versionId: string) => request<ApiScript>("POST", `/workspaces/${ws}/scripts/${id}/versions/${versionId}/restore`),
+  deleteScript: (ws: string, id: string) => request<null>("DELETE", `/workspaces/${ws}/scripts/${id}`),
+  exportScript: (ws: string, id: string, format: "markdown" | "json" | "text") => requestBlob(`/workspaces/${ws}/scripts/${id}/export?format=${format}`),
+  // Projects + export history.
+  projects: (ws: string) => request<ApiProject[]>("GET", `/workspaces/${ws}/projects`),
+  project: (ws: string, id: string) => request<ApiProject>("GET", `/workspaces/${ws}/projects/${id}`),
+  createProject: (ws: string, name: string, description = "") => request<ApiProject>("POST", `/workspaces/${ws}/projects`, { name, description }),
+  updateProject: (ws: string, id: string, patch: { name?: string; description?: string }) => request<ApiProject>("PATCH", `/workspaces/${ws}/projects/${id}`, patch),
+  deleteProject: (ws: string, id: string) => request<null>("DELETE", `/workspaces/${ws}/projects/${id}`),
+  addProjectItem: (ws: string, id: string, kind: ApiItemKind, ref_id: string) => request<ApiProject>("POST", `/workspaces/${ws}/projects/${id}/items`, { kind, ref_id }),
+  removeProjectItem: (ws: string, id: string, kind: ApiItemKind, ref_id: string) => request<ApiProject>("DELETE", `/workspaces/${ws}/projects/${id}/items/${kind}/${ref_id}`),
+  exports: (ws: string) => request<ApiExport[]>("GET", `/workspaces/${ws}/exports`),
+  logExport: (ws: string, kind: string, title: string, format: string) => request<ApiExport>("POST", `/workspaces/${ws}/exports`, { kind, title: title.slice(0, 200), format }),
   waitlist: (email: string, plan: PlanId) => request<{ ok: boolean; already_joined: boolean }>("POST", "/waitlist", { email, plan, source: "app" }, false),
 };

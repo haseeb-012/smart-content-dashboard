@@ -1,5 +1,7 @@
 "use client";
 
+import { LIVE } from "@/lib/config";
+import { LiveIdeas } from "@/components/features/live-create";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -10,7 +12,7 @@ import { cn, compact } from "@/lib/utils";
 import { Button, ButtonLink, Card, CreditCost, EmptyState, MetricChips, PageHeader, Segmented } from "@/components/ui";
 import { VideoThumb } from "@/components/features/video-card";
 
-export default function IdeasPage() {
+function DemoIdeas() {
   const { ws, allChannels, toggleShortlist, removeIdea, createScript, state } = useStore();
   const run = useAction();
   const router = useRouter();
@@ -79,4 +81,8 @@ export default function IdeasPage() {
       )}
     </>
   );
+}
+
+export default function IdeasPage() {
+  return LIVE ? <LiveIdeas /> : <DemoIdeas />;
 }

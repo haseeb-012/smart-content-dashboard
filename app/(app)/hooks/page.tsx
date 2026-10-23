@@ -1,5 +1,7 @@
 "use client";
 
+import { LIVE } from "@/lib/config";
+import { LiveHooks } from "@/components/features/live-create";
 import { useMemo, useState } from "react";
 import { Bookmark, BookmarkCheck, Copy, Search, Sparkles, Wand2 } from "lucide-react";
 import { useStore } from "@/lib/store";
@@ -29,7 +31,7 @@ function HookRow({ text, meta }: { text: string; meta?: React.ReactNode }) {
   );
 }
 
-export default function HooksPage() {
+function DemoHooks() {
   const { ws } = useStore();
   const [view, setView] = useState<(typeof VIEWS)[number]>("Library");
   const [q, setQ] = useState("");
@@ -109,4 +111,8 @@ export default function HooksPage() {
       </div>
     </>
   );
+}
+
+export default function HooksPage() {
+  return LIVE ? <LiveHooks /> : <DemoHooks />;
 }

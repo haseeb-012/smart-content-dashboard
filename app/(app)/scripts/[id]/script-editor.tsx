@@ -57,7 +57,7 @@ export function ScriptEditor({ id }: { id: string }) {
       <div className="grid gap-5 xl:grid-cols-[1fr_300px]">
         <div className="min-w-0 space-y-3">
           <label className="sr-only" htmlFor="script-title">Script title</label>
-          <Input id="script-title" value={title} onChange={(e) => setTitle(e.target.value)} className="border-transparent bg-transparent px-0 font-display text-2xl font-medium focus:ring-0" />
+          <Input id="script-title" value={title} onChange={(e) => setTitle(e.target.value)} className="border-transparent bg-transparent px-0 font-display text-2xl! font-medium focus:ring-0" />
           {BLOCKS.map(([k, label, hint]) => (
             <Card key={k} className="p-4">
               <label htmlFor={`b-${k}`} className="flex items-baseline justify-between">

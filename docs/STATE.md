@@ -12,7 +12,11 @@ Run: `npm install && npm run dev -- -p 3001` → http://localhost:3001
 
 **Channels + Videos are live** (Phase 5 step 2): watchlist (add by URL / search / suggested, remove, refresh, sync status with auto-polling), Discover feed with all filters, sorts, paging and CSV export — cards open the original post until Deep Analysis ships.
 
-Other research/creation modules (analysis, ideas, hooks, scripts, projects, exports, social verification) still use local demo data in both modes — their backend endpoints arrive in later Phase 5 steps. In live mode those local actions don't spend real credits.
+**Deep Analysis is live**: feed cards open `/videos/{id}` → Analyze (1 credit, only on success) → progress polling → Summary/Transcript/Idea/Hook/Format/Visual tabs, plus Create script, Save hook, Add to project, Export for LLM.
+
+**Create module is live** (`components/features/live-create.tsx`): Ideas (list, shortlist, delete, free generator, write script), Hooks (public library with filters, free generator, workspace watchlist), Scripts (create with `Idempotency-Key`, edit → versions, free expand, restore, server-side export), Projects (create, add/move/remove items, delete), Exports (workspace JSON, all scripts Markdown, copy for LLM, history). Verified e2e: 20/20.
+
+Still demo-only in both modes: Dashboard analytics + social verification (next step).
 
 ## Step 3 (done)
 - `@supabase/ssr` browser + server clients (`lib/supabase/*`), PKCE callback `app/auth/callback/route.ts`.

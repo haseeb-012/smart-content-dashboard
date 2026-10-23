@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
-  AlertCircle, ArrowLeft, Clock, Copy, Download, ExternalLink, Eye, Heart, Lightbulb, Loader2, MessageCircle, Sparkles, TrendingUp, Users,
+  AlertCircle, ArrowLeft, Bookmark, BookmarkCheck, Clock, FileText, FolderPlus, Copy, Download, ExternalLink, Eye, Heart, Lightbulb, Loader2, MessageCircle, Sparkles, TrendingUp, Users,
 } from "lucide-react";
 import { api, ApiError, type ApiVideoDetail } from "@/lib/api/client";
 import { useStore } from "@/lib/store";
 import { ago, cn, compact, download } from "@/lib/utils";
 import { Avatar, Badge, Button, Card, CreditCost, EmptyState, PlatformIcon, Skeleton, Tabs } from "@/components/ui";
+import { LiveAddToProject, NewScriptModal, useSavedHooks } from "@/components/features/live-create";
 
 const TABS = ["Summary", "Transcript", "Caption", "Idea", "Hook", "Format", "Visual"] as const;
 type Tab = (typeof TABS)[number];
@@ -37,6 +38,9 @@ export function LiveAnalysis({ id }: { id: string }) {
   const [err, setErr] = useState<ApiError | null>(null);
   const [tab, setTab] = useState<Tab>("Summary");
   const [starting, setStarting] = useState(false);
+  const [scriptOpen, setScriptOpen] = useState(false);
+  const [projOpen, setProjOpen] = useState(false);
+  const hooks = useSavedHooks();
 
   const load = useCallback(async () => {
     if (!ws) return;
@@ -270,6 +274,13 @@ export function LiveAnalysis({ id }: { id: string }) {
           </Card>
 
           <div className="flex flex-wrap gap-2">
+            <Button variant="primary" disabled={!done || state.credits < 1} title={!done ? "Analyze the video first" : undefined} onClick={() => setScriptOpen(true)}>
+              <FileText className="size-4" /> Create script <CreditCost />
+            </Button>
+            <Button disabled={!done || !a?.hook} onClick={() => a?.hook && hooks.toggle(a.hook.slice(0, 300), (a.hook_category as never) ?? null, "analysis")}>
+              {a?.hook && hooks.isSaved(a.hook.slice(0, 300)) ? <BookmarkCheck className="size-4 text-accent" /> : <Bookmark className="size-4" />} Save hook
+            </Button>
+            <Button onClick={() => setProjOpen(true)}><FolderPlus className="size-4" /> Add to project</Button>
             <Button disabled={!idea} onClick={shortlist}><Lightbulb className="size-4" /> {idea?.shortlisted ? "Shortlisted" : "Shortlist idea"}</Button>
             <Button disabled={!done} onClick={() => { void navigator.clipboard.writeText(llmText()); toast("Copied — paste it into any AI tool"); }}>
               <Copy className="size-4" /> Export for LLM
@@ -284,6 +295,8 @@ export function LiveAnalysis({ id }: { id: string }) {
           {done && <p className="flex items-center gap-1.5 text-xs text-muted"><Badge tone="good">Analyzed</Badge> Saved to this workspace — opening it again is free.</p>}
         </div>
       </div>
+      {scriptOpen && <NewScriptModal open onClose={() => setScriptOpen(false)} preset={{ title: idea?.title ?? `Script — ${title.slice(0, 80)}`, topic: idea?.title ?? title, source_video_id: v.id, source_idea_id: idea?.id }} />}
+      {projOpen && <LiveAddToProject open onClose={() => setProjOpen(false)} kind="video" refId={v.id} />}
     </>
   );
 }
