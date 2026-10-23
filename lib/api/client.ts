@@ -32,6 +32,37 @@ export interface ApiCollectionVideo {
 }
 export interface ApiCollectionDetail extends ApiCollectionSummary { breakdown: string[]; videos: ApiCollectionVideo[] }
 
+export type ApiPlatform = "tiktok" | "instagram" | "youtube";
+export interface ApiChannel {
+  id: string; platform: ApiPlatform; handle: string; display_name: string; avatar_url: string | null;
+  followers: number | null; total_views: number | null; video_count: number;
+  sync_status: "pending" | "ok" | "error"; sync_error: string | null; last_synced_at: string | null;
+}
+export interface ApiWatchlistItem extends ApiChannel { outlier_videos: number; added_at: string }
+export interface ApiChannelSearchResult { platform: ApiPlatform; handle: string; display_name: string; followers: number | null; channel_id: string | null; tracked: boolean }
+export interface ApiFeedVideo {
+  id: string; platform: ApiPlatform; url: string; caption: string; thumbnail_url: string | null; posted_at: string | null;
+  duration_sec: number | null; views: number; likes: number; comments: number; shares: number;
+  engagement_rate: number; outlier_score: number | null; channel: ApiChannel;
+}
+export interface FeedParams {
+  channel_id?: string[]; platform?: ApiPlatform; min_outlier?: number; min_views?: number; max_views?: number;
+  min_engagement?: number; posted_within_days?: number; q?: string; sort?: "outlier" | "views" | "engagement" | "newest";
+  limit?: number; offset?: number;
+}
+
+function qs(params: object): string {
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    // Skip empty values; 0 means "any" for filters (but offset=0 is meaningful).
+    if (v === undefined || v === null || v === "" || (v === 0 && k !== "offset")) continue;
+    if (Array.isArray(v)) v.forEach((x) => sp.append(k, String(x)));
+    else sp.set(k, String(v));
+  }
+  const s = sp.toString();
+  return s ? `?${s}` : "";
+}
+
 /** Structured backend error: switch on `code`, never on the message. */
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string, public details: Record<string, unknown> = {}) {
@@ -58,6 +89,7 @@ async function request<T>(method: string, path: string, body?: unknown, auth = t
   } catch {
     throw new ApiError(0, "network_error", "Can't reach the server. Check your connection and try again.");
   }
+  if (res.status === 204) return null as T;
   if (res.ok) return (await res.json()) as T;
   let err: { code?: string; message?: string; details?: Record<string, unknown> } = {};
   try { err = (await res.json()).error ?? {}; } catch {}
@@ -83,5 +115,16 @@ export const api = {
   collection: (slug: string) => request<ApiCollectionDetail>("GET", `/collections/${encodeURIComponent(slug)}`, undefined, false),
   collectionExportUrl: (slug: string, format: "markdown" | "json") =>
     `${API_URL}/api/v1/collections/${encodeURIComponent(slug)}/export?format=${format}`,
+  // Channels watchlist + Discover feed (workspace-scoped, free).
+  watchlist: (ws: string) => request<ApiWatchlistItem[]>("GET", `/workspaces/${ws}/channels`),
+  addChannel: (ws: string, body: { url: string } | { platform: ApiPlatform; handle: string }) =>
+    request<{ channel: ApiChannel; added: boolean }>("POST", `/workspaces/${ws}/channels`, body),
+  removeChannel: (ws: string, channelId: string) => request<null>("DELETE", `/workspaces/${ws}/channels/${channelId}`),
+  refreshChannel: (ws: string, channelId: string) => request<{ queued: boolean }>("POST", `/workspaces/${ws}/channels/${channelId}/refresh`),
+  suggestedChannels: (ws: string) => request<ApiChannel[]>("GET", `/workspaces/${ws}/channels/suggested`),
+  searchChannels: (ws: string, q: string, platform?: ApiPlatform) =>
+    request<ApiChannelSearchResult[]>("GET", `/workspaces/${ws}/channels/search${qs({ q, platform })}`),
+  feed: (ws: string, p: FeedParams) =>
+    request<{ items: ApiFeedVideo[]; total: number; limit: number; offset: number }>("GET", `/workspaces/${ws}/videos${qs(p)}`),
   waitlist: (email: string, plan: PlanId) => request<{ ok: boolean; already_joined: boolean }>("POST", "/waitlist", { email, plan, source: "app" }, false),
 };

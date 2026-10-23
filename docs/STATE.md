@@ -10,7 +10,9 @@ Run: `npm install && npm run dev -- -p 3001` → http://localhost:3001
 
 **Collections are live** (Phase 5 step 1): list/filter/search/sort, detail with curated examples + transcripts, reference-sheet export — all from `/api/v1/collections`.
 
-Other research/creation modules (videos, analysis, ideas, hooks, scripts, projects, exports, social verification) still use local demo data in both modes — their backend endpoints arrive in later Phase 5 steps. In live mode those local actions don't spend real credits.
+**Channels + Videos are live** (Phase 5 step 2): watchlist (add by URL / search / suggested, remove, refresh, sync status with auto-polling), Discover feed with all filters, sorts, paging and CSV export — cards open the original post until Deep Analysis ships.
+
+Other research/creation modules (analysis, ideas, hooks, scripts, projects, exports, social verification) still use local demo data in both modes — their backend endpoints arrive in later Phase 5 steps. In live mode those local actions don't spend real credits.
 
 ## Step 3 (done)
 - `@supabase/ssr` browser + server clients (`lib/supabase/*`), PKCE callback `app/auth/callback/route.ts`.

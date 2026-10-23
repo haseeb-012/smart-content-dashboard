@@ -7,6 +7,7 @@ import { suggestedChannels, channels as seedChannels } from "@/lib/mock/data";
 import type { Channel, Platform } from "@/lib/types";
 import { compact, uid } from "@/lib/utils";
 import { Avatar, Button, Card, EmptyState, Field, Input, Modal, PageHeader, PlatformIcon, Tabs, Textarea } from "@/components/ui";
+import { LiveChannels } from "@/components/features/live-channels";
 
 const WAYS = ["Suggested", "Describe your niche", "Search creators", "Add by URL"] as const;
 type Way = (typeof WAYS)[number];
@@ -35,6 +36,11 @@ function parseUrl(url: string): { platform: Platform; handle: string } | null {
 }
 
 export default function ChannelsPage() {
+  const { live } = useStore();
+  return live ? <LiveChannels /> : <DemoChannels />;
+}
+
+function DemoChannels() {
   const { ws, allChannels, addChannel, removeChannel, limits, toast } = useStore();
   const run = useAction();
   const [open, setOpen] = useState(false);
