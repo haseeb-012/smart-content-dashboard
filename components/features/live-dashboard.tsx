@@ -198,3 +198,70 @@ export function LiveSocialVerification() {
     </div>
   );
 }
+
+/** Settings → Connectors (live): MCP status, server URL and per-tool Allow/Block, stored on the server. */
+export function LiveConnectors() {
+  const { toast } = useStore();
+  const [st, setSt] = useState<import("@/lib/api/client").ApiMcpStatus | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => { let alive = true; api.mcpStatus().then((s) => alive && setSt(s)).catch((e) => alive && setErr(e instanceof ApiError ? e.message : "Couldn't load connectors.")); return () => { alive = false; }; }, []);
+  if (err) return <EmptyState icon={AlertCircle} title="Couldn't load connectors" body={err} />;
+  if (!st) return <Skeleton className="h-40 w-full" />;
+  const on = st.enabled && st.plan_includes_mcp;
+
+  const setPerm = async (name: string, permission: "allow" | "block") => {
+    try { setSt(await api.mcpPermissions({ [name]: permission })); toast(`${name}: ${permission === "allow" ? "allowed" : "blocked"}`); }
+    catch (e) { toast(e instanceof ApiError ? e.message : "Couldn't save.", "error"); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card className="p-5">
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 flex-none place-items-center rounded-lg bg-accent-soft text-accent"><ShieldCheck className="size-5" /></span>
+          <div className="flex-1">
+            <p className="font-semibold">Claude &amp; other AI assistants (MCP)</p>
+            <p className="text-sm text-muted">Use your Smart Content data inside Claude, Cursor, VS Code and any MCP client with OAuth.</p>
+          </div>
+          {on ? <Badge tone="good">Enabled for your account</Badge> : <Badge>Early access</Badge>}
+        </div>
+        {on ? (
+          <div className="mt-4 space-y-3">
+            <ol className="space-y-1 text-sm text-muted">
+              <li>1. In Claude: Settings → Connectors → Add custom connector</li>
+              <li>2. Paste the server URL below, then sign in and click “Allow access”</li>
+              <li>3. Ask about your niche — e.g. “What are the top outliers in my watchlist this month?”</li>
+            </ol>
+            <div className="flex items-center gap-2 rounded-lg bg-surface-2 p-3">
+              <code className="flex-1 truncate text-sm">{st.server_url}</code>
+              <Button onClick={() => { void navigator.clipboard.writeText(st.server_url); toast("Server URL copied"); }}><Copy className="size-4" /> Copy</Button>
+            </div>
+            <p className="text-xs text-muted">Reading your data is free. The <code>analyze</code> tool uses 1 credit per new video, only if it succeeds.</p>
+          </div>
+        ) : (
+          <p className="mt-4 rounded-lg bg-surface-2 p-3 text-sm text-muted">
+            {st.plan_includes_mcp ? "MCP is in early access — our team enables it per account. Contact support to request access." : "MCP isn't included in your plan."}
+          </p>
+        )}
+      </Card>
+      {on && (
+        <Card className="px-4">
+          <p className="border-b border-line py-3 text-sm font-semibold">Tool permissions</p>
+          <ul className="divide-y divide-line">
+            {st.tools.map((t) => (
+              <li key={t.name} className="flex items-center gap-3 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <code className="text-sm">{t.name}</code>
+                  <p className="truncate text-xs text-muted" title={t.description}>{t.description}</p>
+                </div>
+                <Select aria-label={`Permission for ${t.name}`} className="w-32" value={t.permission} onChange={(e) => setPerm(t.name, e.target.value as "allow" | "block")}>
+                  <option value="allow">Allowed</option><option value="block">Blocked</option>
+                </Select>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+    </div>
+  );
+}

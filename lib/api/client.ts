@@ -74,6 +74,7 @@ export interface ApiAnalytics {
   days: number; accounts: ApiSocialAccount[]; total_followers: number | null; followers_gained: number | null; views: number; posts: number;
   views_by_day: Array<{ date: string; value: number }>; followers_by_day: Array<{ date: string; value: number }>; recent_videos: ApiFeedVideo[];
 }
+export interface ApiMcpStatus { enabled: boolean; plan_includes_mcp: boolean; server_url: string; tools: Array<{ name: string; title: string; description: string; permission: "allow" | "block" }> }
 export interface FeedParams {
   channel_id?: string[]; platform?: ApiPlatform; min_outlier?: number; min_views?: number; max_views?: number;
   min_engagement?: number; posted_within_days?: number; q?: string; sort?: "outlier" | "views" | "engagement" | "newest";
@@ -208,5 +209,7 @@ export const api = {
   verifySocial: (id: string) => request<ApiSocialAccount>("POST", `/me/social/${id}/verify`),
   removeSocial: (id: string) => request<null>("DELETE", `/me/social/${id}`),
   analytics: (days: 7 | 30 | 90) => request<ApiAnalytics>("GET", `/me/analytics?days=${days}`),
+  mcpStatus: () => request<ApiMcpStatus>("GET", "/me/mcp"),
+  mcpPermissions: (permissions: Record<string, "allow" | "block">) => request<ApiMcpStatus>("PATCH", "/me/mcp", { permissions }),
   waitlist: (email: string, plan: PlanId) => request<{ ok: boolean; already_joined: boolean }>("POST", "/waitlist", { email, plan, source: "app" }, false),
 };

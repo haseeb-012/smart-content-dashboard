@@ -6,7 +6,7 @@ import { AlertTriangle, BadgeCheck, Check, Coins, Copy, KeyRound, Loader2, Lock,
 import { useAction, useAsyncAction, useStore } from "@/lib/store";
 import { api } from "@/lib/api/client";
 import { LIVE } from "@/lib/config";
-import { LiveSocialVerification } from "@/components/features/live-dashboard";
+import { LiveConnectors, LiveSocialVerification } from "@/components/features/live-dashboard";
 import { PLAN_LIMITS } from "@/lib/mock/data";
 import type { Platform, PlanId } from "@/lib/types";
 import { ago, cn } from "@/lib/utils";
@@ -438,7 +438,7 @@ export function SettingsView() {
         {tab === "Social verification" && (LIVE ? <LiveSocialVerification /> : <SocialVerification />)}
         {tab === "Workspaces" && <Workspaces />}
         {tab === "Feature flags" && <FeatureFlags />}
-        {tab === "Connectors" && <Connectors />}
+        {tab === "Connectors" && (LIVE ? <LiveConnectors /> : <Connectors />)}
       </div>
     </>
   );
