@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/* Smart Content app tokens — light, dense, card-based (layout follows the reference app; colors are ours). */
+:root {
+  /* Same family as the landing site: navy ink (#020814 / #15223c) + electric blue accent. */
+  --bg: #f2f5fb;
+  --sidebar: #e8edf7;
+  --surface: #ffffff;
+  --surface-2: #f5f8fd;
+  --ink: #0a1430;
+  --navy: #15223c; /* landing button colour */
+  --muted: #53607a; /* ~6:1 on white */
+  --subtle: #8792a8;
+  --line: #e0e6f1;
+  --accent: #0b4fe6; /* electric blue, ~6:1 on white */
+  --accent-soft: #e8f0ff;
+  --good: #047857;
+  --good-bg: #d1fae5;
+  --views: #1d4ed8;
+  --views-bg: #dbeafe;
+  --warn: #c2410c;
+  --warn-bg: #ffedd5;
+  --danger: #b91c1c;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-sidebar: var(--sidebar);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-navy: var(--navy);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-good-bg: var(--good-bg);
+  --color-views: var(--views);
+  --color-views-bg: var(--views-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-host);
+}
+
+html { background: var(--bg); }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.tabular { font-variant-numeric: tabular-nums; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@keyframes shimmer { 100% { transform: translateX(100%); } }
+.skeleton { position: relative; overflow: hidden; background: #e6e9f0; }
+.skeleton::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.6), transparent);
+  animation: shimmer 1.4s infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
