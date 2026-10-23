@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, ArrowUpDown, Download, ExternalLink, Eye, Flame, SearchX, SlidersHorizontal, TrendingUp, Video as VideoIcon } from "lucide-react";
+import { AlertCircle, ArrowUpDown, Download, Eye, Flame, SearchX, SlidersHorizontal, Sparkles, TrendingUp, Video as VideoIcon } from "lucide-react";
 import { api, ApiError, type ApiFeedVideo, type ApiPlatform, type ApiWatchlistItem, type FeedParams } from "@/lib/api/client";
 import { useStore } from "@/lib/store";
 import { ago, cn, compact, download } from "@/lib/utils";
@@ -16,7 +17,7 @@ const color = (s: string) => `hsl(${[...s].reduce((a, c) => (a * 31 + c.charCode
 function LiveVideoCard({ v }: { v: ApiFeedVideo }) {
   return (
     <article className="group min-w-0">
-      <a href={v.url} target="_blank" rel="noopener noreferrer" className="block" aria-label={`Open on ${v.platform}: ${v.caption.slice(0, 60)}`}>
+      <Link href={`/videos/${v.id}`} className="block" aria-label={`Open analysis: ${v.caption.slice(0, 60) || "video"}`}>
         <div
           className="relative aspect-[9/14] overflow-hidden rounded-xl bg-cover bg-center"
           style={v.thumbnail_url ? { backgroundImage: `url("${v.thumbnail_url}")` } : { backgroundImage: `linear-gradient(135deg, ${color(v.channel.handle)}, #0a1430)` }}
@@ -28,10 +29,10 @@ function LiveVideoCard({ v }: { v: ApiFeedVideo }) {
             </span>
           )}
           <span className="absolute inset-0 grid place-items-center bg-black/0 opacity-0 transition group-hover:bg-black/20 group-hover:opacity-100">
-            <span className="flex items-center gap-1 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-ink">Watch <ExternalLink className="size-3" /></span>
+            <span className="flex items-center gap-1 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-ink"><Sparkles className="size-3" /> Analyze</span>
           </span>
         </div>
-      </a>
+      </Link>
       <p className="mt-2 line-clamp-1 text-[13px] font-semibold" title={v.caption}>{v.caption || "Untitled video"}</p>
       <p className="mt-0.5 flex justify-between gap-2 text-xs text-muted">
         <span className="truncate">@{v.channel.handle}</span>

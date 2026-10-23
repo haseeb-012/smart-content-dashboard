@@ -45,6 +45,17 @@ export interface ApiFeedVideo {
   duration_sec: number | null; views: number; likes: number; comments: number; shares: number;
   engagement_rate: number; outlier_score: number | null; channel: ApiChannel;
 }
+export type ApiAnalysisStatus = "queued" | "processing" | "complete" | "failed";
+export interface ApiAnalysis {
+  id: string; video_id: string; status: ApiAnalysisStatus; error: string | null; provider: string | null; model: string | null;
+  summary: string | null; transcript: Array<{ t: string; text: string }>; hook: string | null; hook_category: string | null;
+  format: string | null; visual: string | null; idea: string | null; created_at: string; started_at: string | null; completed_at: string | null;
+}
+export interface ApiIdea {
+  id: string; video_id: string | null; analysis_id: string | null; source: "analysis" | "generated" | "manual"; title: string;
+  positioning: string; format: string; contrast: string; personalization: string; shortlisted: boolean; created_at: string;
+}
+export interface ApiVideoDetail { video: ApiFeedVideo; analysis: ApiAnalysis | null; idea: ApiIdea | null }
 export interface FeedParams {
   channel_id?: string[]; platform?: ApiPlatform; min_outlier?: number; min_views?: number; max_views?: number;
   min_engagement?: number; posted_within_days?: number; q?: string; sort?: "outlier" | "views" | "engagement" | "newest";
@@ -126,5 +137,11 @@ export const api = {
     request<ApiChannelSearchResult[]>("GET", `/workspaces/${ws}/channels/search${qs({ q, platform })}`),
   feed: (ws: string, p: FeedParams) =>
     request<{ items: ApiFeedVideo[]; total: number; limit: number; offset: number }>("GET", `/workspaces/${ws}/videos${qs(p)}`),
+  // Deep Analysis (1 credit, charged only on success) + ideas.
+  videoDetail: (ws: string, videoId: string) => request<ApiVideoDetail>("GET", `/workspaces/${ws}/videos/${videoId}`),
+  analyze: (ws: string, videoId: string) => request<ApiAnalysis>("POST", `/workspaces/${ws}/videos/${videoId}/analysis`),
+  ideas: (ws: string, shortlisted?: boolean) => request<ApiIdea[]>("GET", `/workspaces/${ws}/ideas${qs({ shortlisted })}`),
+  updateIdea: (ws: string, id: string, patch: { shortlisted?: boolean; title?: string }) => request<ApiIdea>("PATCH", `/workspaces/${ws}/ideas/${id}`, patch),
+  deleteIdea: (ws: string, id: string) => request<null>("DELETE", `/workspaces/${ws}/ideas/${id}`),
   waitlist: (email: string, plan: PlanId) => request<{ ok: boolean; already_joined: boolean }>("POST", "/waitlist", { email, plan, source: "app" }, false),
 };
