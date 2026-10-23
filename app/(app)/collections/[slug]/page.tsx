@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { collections } from "@/lib/mock/data";
+import { LIVE } from "@/lib/config";
 import { CollectionDetail } from "./collection-detail";
 
 export function generateStaticParams() {
@@ -8,6 +9,7 @@ export function generateStaticParams() {
 
 export default async function CollectionPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  if (!collections.some((c) => c.slug === slug)) notFound();
+  // Demo slugs are known at build time; live slugs come from the API (curated after deploy).
+  if (!LIVE && !collections.some((c) => c.slug === slug)) notFound();
   return <CollectionDetail slug={slug} />;
 }

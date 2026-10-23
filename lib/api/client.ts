@@ -21,6 +21,17 @@ export interface ApiMe { profile: ApiProfile; plan: ApiPlan; credits: ApiCredits
 export interface ApiWorkspace { id: string; name: string; is_active: boolean; role: "owner" | "editor" | "guest"; created_at: string }
 export interface ApiLedgerEntry { id: string; kind: "usage" | "adjustment"; amount: number; action: string; workspace_id: string | null; created_at: string }
 
+export type ApiCollectionCategory = "formats" | "editing_styles" | "visual_hooks" | "signature_series";
+export interface ApiCollectionSummary {
+  id: string; slug: string; name: string; category: ApiCollectionCategory; sub: string; description: string;
+  cover_hue: string; video_count: number; is_published: boolean; updated_at: string;
+}
+export interface ApiCollectionVideo {
+  id: string; position: number; platform: "tiktok" | "instagram" | "youtube"; url: string; title: string;
+  creator_handle: string; views: number | null; outlier_score: number | null; transcript: string; notes: string;
+}
+export interface ApiCollectionDetail extends ApiCollectionSummary { breakdown: string[]; videos: ApiCollectionVideo[] }
+
 /** Structured backend error: switch on `code`, never on the message. */
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string, public details: Record<string, unknown> = {}) {
@@ -64,5 +75,13 @@ export const api = {
   creditHistory: (limit = 50) => request<{ credits: ApiCredits; entries: ApiLedgerEntry[] }>("GET", `/credits/history?limit=${limit}`),
   checkout: (plan: PlanId, cycle: Cycle) => request<{ url: string }>("POST", "/billing/checkout-session", { plan, cycle }),
   portal: () => request<{ url: string }>("POST", "/billing/portal-session"),
+  // Collections are public + free (no auth, no credits).
+  collections: (p: { category?: ApiCollectionCategory; q?: string; sort?: "most_videos" | "name" | "recent" } = {}) => {
+    const qs = new URLSearchParams(Object.entries(p).filter(([, v]) => v) as [string, string][]).toString();
+    return request<ApiCollectionSummary[]>("GET", `/collections${qs ? `?${qs}` : ""}`, undefined, false);
+  },
+  collection: (slug: string) => request<ApiCollectionDetail>("GET", `/collections/${encodeURIComponent(slug)}`, undefined, false),
+  collectionExportUrl: (slug: string, format: "markdown" | "json") =>
+    `${API_URL}/api/v1/collections/${encodeURIComponent(slug)}/export?format=${format}`,
   waitlist: (email: string, plan: PlanId) => request<{ ok: boolean; already_joined: boolean }>("POST", "/waitlist", { email, plan, source: "app" }, false),
 };
