@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, BadgeCheck, Check, Coins, Copy, KeyRound, Loader2, Lock, Plug, ShieldCheck, Trash2 } from "lucide-react";
 import { useAction, useAsyncAction, useStore } from "@/lib/store";
 import { api } from "@/lib/api/client";
+import { LIVE } from "@/lib/config";
+import { LiveSocialVerification } from "@/components/features/live-dashboard";
 import { PLAN_LIMITS } from "@/lib/mock/data";
 import type { Platform, PlanId } from "@/lib/types";
 import { ago, cn } from "@/lib/utils";
@@ -433,7 +435,7 @@ export function SettingsView() {
       <div className="mt-5">
         {tab === "Subscription" && <Subscription />}
         {tab === "Profile" && <Profile />}
-        {tab === "Social verification" && <SocialVerification />}
+        {tab === "Social verification" && (LIVE ? <LiveSocialVerification /> : <SocialVerification />)}
         {tab === "Workspaces" && <Workspaces />}
         {tab === "Feature flags" && <FeatureFlags />}
         {tab === "Connectors" && <Connectors />}

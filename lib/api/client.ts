@@ -69,6 +69,11 @@ export type ApiItemKind = "video" | "idea" | "script";
 export interface ApiProjectItem { kind: ApiItemKind; ref_id: string; title: string; subtitle: string; thumbnail_url: string | null; platform: ApiPlatform | null; added_at: string }
 export interface ApiProject { id: string; name: string; description: string; created_at: string; items: ApiProjectItem[] }
 export interface ApiExport { id: string; kind: string; title: string; format: string; created_at: string }
+export interface ApiSocialAccount { id: string; platform: ApiPlatform; handle: string; code: string; status: "pending" | "verified"; verified_at: string | null; channel: ApiChannel | null }
+export interface ApiAnalytics {
+  days: number; accounts: ApiSocialAccount[]; total_followers: number | null; followers_gained: number | null; views: number; posts: number;
+  views_by_day: Array<{ date: string; value: number }>; followers_by_day: Array<{ date: string; value: number }>; recent_videos: ApiFeedVideo[];
+}
 export interface FeedParams {
   channel_id?: string[]; platform?: ApiPlatform; min_outlier?: number; min_views?: number; max_views?: number;
   min_engagement?: number; posted_within_days?: number; q?: string; sort?: "outlier" | "views" | "engagement" | "newest";
@@ -158,6 +163,8 @@ export const api = {
   suggestedChannels: (ws: string) => request<ApiChannel[]>("GET", `/workspaces/${ws}/channels/suggested`),
   searchChannels: (ws: string, q: string, platform?: ApiPlatform) =>
     request<ApiChannelSearchResult[]>("GET", `/workspaces/${ws}/channels/search${qs({ q, platform })}`),
+  nicheSearch: (ws: string, description: string, platform?: ApiPlatform) =>
+    request<ApiChannelSearchResult[]>("POST", `/workspaces/${ws}/channels/niche-search`, { description, platform }),
   feed: (ws: string, p: FeedParams) =>
     request<{ items: ApiFeedVideo[]; total: number; limit: number; offset: number }>("GET", `/workspaces/${ws}/videos${qs(p)}`),
   // Deep Analysis (1 credit, charged only on success) + ideas.
@@ -195,5 +202,11 @@ export const api = {
   removeProjectItem: (ws: string, id: string, kind: ApiItemKind, ref_id: string) => request<ApiProject>("DELETE", `/workspaces/${ws}/projects/${id}/items/${kind}/${ref_id}`),
   exports: (ws: string) => request<ApiExport[]>("GET", `/workspaces/${ws}/exports`),
   logExport: (ws: string, kind: string, title: string, format: string) => request<ApiExport>("POST", `/workspaces/${ws}/exports`, { kind, title: title.slice(0, 200), format }),
+  // Social verification (bio code) + own-account analytics.
+  social: () => request<ApiSocialAccount[]>("GET", "/me/social"),
+  startSocial: (platform: ApiPlatform, handle: string) => request<ApiSocialAccount>("POST", "/me/social", { platform, handle }),
+  verifySocial: (id: string) => request<ApiSocialAccount>("POST", `/me/social/${id}/verify`),
+  removeSocial: (id: string) => request<null>("DELETE", `/me/social/${id}`),
+  analytics: (days: 7 | 30 | 90) => request<ApiAnalytics>("GET", `/me/analytics?days=${days}`),
   waitlist: (email: string, plan: PlanId) => request<{ ok: boolean; already_joined: boolean }>("POST", "/waitlist", { email, plan, source: "app" }, false),
 };

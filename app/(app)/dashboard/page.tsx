@@ -1,5 +1,7 @@
 "use client";
 
+import { LIVE } from "@/lib/config";
+import { LiveDashboard } from "@/components/features/live-dashboard";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { BadgeCheck, Eye, FileVideo, ShieldCheck, UserPlus, Users } from "lucide-react";
@@ -33,7 +35,7 @@ function Metric({ icon: Icon, label, value, delta }: { icon: typeof Eye; label: 
   );
 }
 
-export default function DashboardPage() {
+function DemoDashboard() {
   const { state } = useStore();
   const [range, setRange] = useState<Range>("30d");
   const verified = state.social.filter((s) => s.status === "verified");
@@ -108,4 +110,8 @@ export default function DashboardPage() {
       </Card>
     </>
   );
+}
+
+export default function DashboardPage() {
+  return LIVE ? <LiveDashboard /> : <DemoDashboard />;
 }

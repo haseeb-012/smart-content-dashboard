@@ -50,6 +50,9 @@ export function LiveChannels() {
   const [platform, setPlatform] = useState<ApiPlatform | "">("");
   const [results, setResults] = useState<ApiChannelSearchResult[] | null>(null);
   const [url, setUrl] = useState("");
+  const [niche, setNiche] = useState("");
+  const [nicheBusy, setNicheBusy] = useState(false);
+  const [nicheResults, setNicheResults] = useState<ApiChannelSearchResult[] | null>(null);
   const poll = useRef<number | null>(null);
 
   const load = useCallback(async () => {
@@ -213,12 +216,34 @@ export function LiveChannels() {
             </form>
           )}
           {way === "Describe your niche" && (
-            <div className="rounded-xl border border-dashed border-line p-5 text-center">
-              <Wand2 className="mx-auto size-6 text-accent" />
-              <p className="mt-2 font-medium">AI niche matching is coming with the Gemini step</p>
-              <p className="mt-1 text-sm text-muted">For now, search a creator by name or paste their profile link.</p>
-              <Button className="mt-3" onClick={() => setWay("Search creators")}>Search creators</Button>
-            </div>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setNicheBusy(true); setNicheResults(null);
+              const r = await run(() => api.nicheSearch(ws, niche.trim(), platform || undefined));
+              setNicheResults(r ?? []); setNicheBusy(false);
+            }}>
+              <Field label="Describe your niche" hint="The AI suggests creators, then we check each account exists before showing it. Free.">
+                <Input value={niche} onChange={(e) => setNiche(e.target.value)} placeholder="e.g. budget travel tips for students" />
+              </Field>
+              <div className="mt-3 flex gap-2">
+                <Select aria-label="Platform" className="w-40" value={platform} onChange={(e) => setPlatform(e.target.value as ApiPlatform | "")}>
+                  <option value="">All platforms</option><option value="tiktok">TikTok</option><option value="instagram">Instagram</option><option value="youtube">YouTube</option>
+                </Select>
+                <Button type="submit" variant="primary" loading={nicheBusy} disabled={niche.trim().length < 5}><Wand2 className="size-4" /> Find creators</Button>
+              </div>
+              {nicheBusy && <p className="mt-3 text-sm text-muted" role="status">Finding and checking creators — this can take a few seconds…</p>}
+              {nicheResults && (
+                nicheResults.length === 0 ? <p className="py-6 text-center text-sm text-muted">No matching creators found. Try a more specific description.</p> : (
+                  <ul className="mt-2 divide-y divide-line">
+                    {nicheResults.map((r) => (
+                      <Row key={`${r.platform}:${r.handle}`} name={r.display_name} handle={r.handle} platform={r.platform} followers={r.followers}
+                        extra={<span className="hidden text-xs text-subtle sm:inline">{PLATFORM_LABEL[r.platform]}</span>}
+                        action={trackBtn(`n:${r.platform}:${r.handle}`, r.platform, r.handle)} />
+                    ))}
+                  </ul>
+                )
+              )}
+            </form>
           )}
         </div>
       </Modal>
